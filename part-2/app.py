@@ -19,7 +19,7 @@ import sqlite3
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Required for flash messages
 
-DATABASE = 'students.db'
+DATABASE = 'part2-students.db'
 
 
 def get_db_connection():
@@ -54,6 +54,9 @@ def add_student():
         course = request.form['course']
 
         conn = get_db_connection()
+        existing_email = conn.execute("SELECT * FROM students WHERE email = ?",(email,)).fetchone()
+        if existing_email:
+            return render_template( 'add.html', error="Email already exists!",name=name,email=email,course=course)
         conn.execute(
             'INSERT INTO students (name, email, course) VALUES (?, ?, ?)',
             (name, email, course)
@@ -71,12 +74,24 @@ def add_student():
 # READ - Display all students
 # =============================================================================
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
+    search = request.args.get('search')  # gets ?search=value from URL
     conn = get_db_connection()
-    students = conn.execute('SELECT * FROM students ORDER BY id DESC').fetchall()  # Newest first
+
+    if search:
+        students = conn.execute(
+            "SELECT * FROM students WHERE name LIKE ? ORDER BY id ASC",
+            (f"%{search}%",)
+        ).fetchall()
+    else:
+        students = conn.execute(
+            "SELECT * FROM students ORDER BY id ASC"
+        ).fetchall()
+
     conn.close()
     return render_template('index.html', students=students)
+
 
 
 # =============================================================================
@@ -128,6 +143,13 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 
+#when i run the code 126-127-31-32-25-26-22-27-28-32-33to38-41-42-127-128
+#when user vist home page 74-75-76-25to42-76-77-78-78
+#when user clicks add student =true then 49-50-51-51-53-54-56-31-25-56to62-64-65 goes back to home page
+#edit 86-87-88-31-25-88-91-92=93-95-96--97-99-100-102-103 goes to home page
+#delete 115-116-117-31-25-117-118-119-120-122-123 - goes back to home page
+
+
 # =============================================================================
 # CRUD SUMMARY:
 # =============================================================================
@@ -167,4 +189,4 @@ if __name__ == '__main__':
 # 1. Add a "Search" feature to find students by name
 # 2. Add validation to check if email already exists before adding
 #
-# =============================================================================
+# ======================================
